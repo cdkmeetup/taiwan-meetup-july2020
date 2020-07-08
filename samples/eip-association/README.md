@@ -2,6 +2,8 @@
 
 This sample demonstrates how to reuse existing `EIP` to create a new VPC and assign to the NAT Gateway instance.
 
+see full discussion at https://t.me/AWSCDK/3818
+
 # Usage
 
 ```bash
