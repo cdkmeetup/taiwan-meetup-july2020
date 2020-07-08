@@ -4,7 +4,6 @@ import * as ec2 from '@aws-cdk/aws-ec2';
 
 const DEFAULT_ALLOCATION_ID = 'eipalloc-01e90a91e61f2cbee'
 
-
 export interface EipAssociationStackProps extends cdk.StackProps {
   readonly instance: ec2.IInstance;
 }
@@ -47,9 +46,19 @@ const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
 };
 
-const bastion = new BastionLinuxStack(app, 'BastionLinuxStack', { env })
-new EipAssociationStack(app, 'EipAssociationStack', {
-  env,
-  instance: bastion.instance,
+const stack = new cdk.Stack(app, 'SampleReuseNatEipStack', { env })
+
+// create a new vpc with single nat gateway
+const vpc = new ec2.Vpc(stack, 'Vpc', { 
+  maxAzs: 3, 
+  natGateways: 1,
 })
+
+// find the nat gateway resource in the first public subnet
+const cfnnatg = vpc.publicSubnets[0].node.tryFindChild('NATGateway') as ec2.CfnNatGateway
+cfnnatg.addPropertyOverride('AllocationId', vpc.node.tryGetContext('eip_allocation_id') ?? DEFAULT_ALLOCATION_ID)
+
+// we don't need create new EIP for the 1st public subnet
+vpc.publicSubnets[0].node.tryRemoveChild('EIP')
+
 
